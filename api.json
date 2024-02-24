@@ -1,8 +1,0 @@
-{
-    "base_url": "https://retro.umoiq.com/service/publicXMLFeed",
-    "a": "ttc",
-    "commands": [
-        "routeList",
-        "routeConfig"
-    ]
-}

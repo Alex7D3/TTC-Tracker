@@ -1,3 +1,26 @@
+# About
+TTC Tracker is a web application used to view information about TTC buses and travel routes, both in the form of live 
+TTC updates and preplanned schedules. Users can create, modify, delete, and view details of custom routes.
+
+# Roadmap of Updates
+## Swap to PostgreSQL - GTFS Data
+  This is more of a developer/maintainability change I would like to do. It will be a significant refactor, so it may take some time.
+  > The Toronto Transit Commision and Toronto Open Data plan to change the Real-Time Next Vehicle Arrival (NVAS) data format by Q1 2024. In the near future, this application may stop working. The plan is to update the app
+once this change takes place, and rewrite the backend to use PostgreSQL over mongoDB. There are a few reasons for this change in database
+software:
+  - The data format of live data is likely to change from XML provided by a REST API to GTFS Realtime. GTFS Realtime can easily be
+inserted into a relational database, and this provides better opportunities for caching the data.
+  - The static form of GTFS that the TTC currently provides is of a higher quality than that provided by the REST API, and this data is
+best formatted in a relational database.
+  - As it stands now, the data integrity is not ideal using mongoDB with the REST API. There are situations in the current implementation requiring cross-collection referencing that would be simplified by using join operations in a relational database. This will help
+reduce data redundancy (use normalized data), improve efficiency, and reduce query complexity.
+
+## Rewrite in TypeScript
+  Another maintainability change, having types will help keep the codebase more readible and allow for faster development time.
+  This is a simple change to make.
+## Live Messages
+  A helpful feature the application does not take advantage of is live service update messages provided by the REST API. 
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

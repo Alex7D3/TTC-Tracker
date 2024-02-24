@@ -1,14 +1,16 @@
-import React from 'react';
+import React from "react";
 
-export default function PopupList({ items, isOpen }) {
-    if(!isOpen) return null;
+export default function PopupList({ clickFunction, items }) {
     return (
-        <datalist className="list-group">{
-                items && items.map((item, idx) => 
-                    <option key="idx" className="list-group-item">
-                        {item.name}
-                    </option>
+        <div className="list-group position-absolute z-1">{
+                items.map((item, idx) => 
+                    <button key={idx}
+                        className={
+                            "list-group-item list-group-item-action position-relative z-2"
+                        }
+                        onMouseDown={() => clickFunction(idx)}
+                    >{item.title}</button>
                 )   
-        }</datalist>
+        }</div>
     );
 }

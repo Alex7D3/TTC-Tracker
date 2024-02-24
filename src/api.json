@@ -1,0 +1,12 @@
+{
+    "base_url": "https://retro.umoiq.com/service/publicXMLFeed",
+    "base_roads_url": "https://roads.googleapis.com/v1",
+    "a": "ttc",
+    "commands": [
+        "routeList",
+        "routeConfig",
+        "schedule",
+        "predictions",
+        "vehicleLocations"
+    ]
+}

@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/public/TTC Routes and Schedules Data
+/server/loader.js
 /.pnp
 .pnp.js
 
