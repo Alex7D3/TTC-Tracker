@@ -6,13 +6,14 @@ export default function Signup() {
     const { pathname } = useLocation();
     const state = useRef(pathname === "/signup");
     const navigate = useNavigate();
+    const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
     axios.defaults.withCredentials = true;
 
     function onSubmit(e) {
         e.preventDefault();
-        axios.post(`${process.env.REACT_APP_BASE_URI}${pathname}`, { name, password })
+        axios.post(`${process.env.REACT_APP_BASE_URI}${pathname}`, { name, password, email })
         .then((result) => {
             if(result.ok) navigate("/");
             else {
@@ -28,6 +29,16 @@ export default function Signup() {
             <div className="col p-3 bg-white">
                 <h2>{state.current ? "Signup" : "Login"}</h2>
                 <form className="form needs-validation" noValidate autoComplete="off" onSubmit={onSubmit}>
+                    <div className="form-row mb-3">
+                        <label htmlFor="email"><strong>Email</strong></label>
+                        <input
+                            type="email"
+                            placeholder="Enter Email"
+                            name="email"
+                            className="form-control"
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
                     <div className="form-row mb-3">
                         <label htmlFor="name"><strong>Username</strong></label>
                         <input
