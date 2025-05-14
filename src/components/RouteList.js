@@ -4,7 +4,7 @@ import axios from "axios";
 import { act } from "react-dom/test-utils";
 import api from "../api.json";
 
-function Route({ markDeletion, markActive, isActive, route }) {
+function BusRoute({ markDeletion, markActive, isActive, route }) {
     const { name, busTitle, stopTitle, dirTitle, busTag, stopTag, _id } = route;
 
     return (
@@ -56,21 +56,29 @@ export default function RouteList({ setActiveBusRoute }) {
     const [activeIdx, setActiveIdx] = useState(null);
 
     useEffect(() => {
-        
-        axios.get(`${process.env.REACT_APP_BASE_URI}/user-route`, {
-            
+        let isMounted = true;
+        const controller = new AbortController();
+        axios.get(`/users`, {
+            signal: controller.signal
         })
-        .then(response => setBusRoutes(response.data))
-        .catch(window.alert);
-    }, [busRoutes.length])
+        .then(response => isMounted && setBusRoutes(response.data))
+        .catch(console.error);
 
-    async function deleteBusRoute(_id) {
-        await axios.delete(`${process.env.REACT_APP_BASE_URI}/user-route/delete/${_id}`, {
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, []);
+
+    function deleteBusRoute(_id) {
+        axios.delete(`${process.env.REACT_APP_BASE_URI}/user-route/delete/${_id}`, {
             
         })
-        .catch(window.alert);
-        setBusRoutes(busRoutes.filter(route => route._id !== _id));
-        setActiveBusRoute(null);
+        .then(() => {
+            setBusRoutes(busRoutes.filter(route => route._id !== _id));
+            setActiveBusRoute(null);
+        })
+        .catch(console.error);
     }
 
     function activateBusRoute(idx) {
@@ -98,7 +106,7 @@ export default function RouteList({ setActiveBusRoute }) {
                 </thead>
                 <tbody>
                     {busRoutes.map((item, idx) => 
-                        <Route
+                        <BusRoute
                             key={idx}
                             route={item}
                             markDeletion={() => deleteBusRoute(item._id)}

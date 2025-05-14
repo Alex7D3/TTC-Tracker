@@ -1,4 +1,8 @@
-DROP TABLE IF EXISTS agency, calendar, calendar_dates, routes, route_types, shapes, stop_times, stops, trips, users, user_to_routes, shape_geometries;
+DROP INDEX IF EXISTS calendar_dates_date, shape_id_idx, stop_times_idx, arr_time_idx, dep_time_idx, route_trgm_idx, route_ts_idx, stop_trgm_idx, stop_ts_idx;
+DROP MATERIALIZED VIEW IF EXISTS route_query, stop_query;
+DROP TABLE IF EXISTS agency, calendar, calendar_dates, routes, route_types, shapes, stop_times, stops, trips, users, user_to_routes, shape_geometries, trip_stops, synonyms;
+DROP TEXT SEARCH CONFIGURATION IF EXISTS streetname;
+DROP TEXT SEARCH DICTIONARY IF EXISTS streetname_dict;
 
 CREATE TABLE agency (
     agency_id text primary key,
@@ -61,7 +65,7 @@ CREATE TABLE stop_times (
     stop_id text,
     stop_sequence integer NOT NULL,
     shape_dist_traveled double precision,
-    CONSTRAINT stop_times_pk primary key (trip_id, stop_sequence) 
+    CONSTRAINT stop_times_pk PRIMARY KEY (trip_id, stop_sequence) 
 );
 CREATE INDEX stop_times_idx ON stop_times (trip_id, stop_id);
 CREATE INDEX arr_time_idx ON stop_times (arrival_time);
@@ -85,6 +89,17 @@ CREATE TABLE trips (
     direction_id integer NOT NULL,
     block_id text NOT NULL,
     shape_id text
+);
+
+CREATE TABLE trip_stops (
+    trip_id text,
+    stop_sequence integer,
+    stop_count integer,
+    route_id text,
+    service_id text,
+    shape_id text,
+    stop_id text,
+    arrival_time interval
 );
 
 CREATE TABLE users (    
@@ -135,3 +150,65 @@ SELECT shape_id, ST_MakeLine(array_agg(
 ))
 FROM shapes
 GROUP BY shape_id;
+
+INSERT INTO trip_stops (trip_id, stop_sequence, stop_count, route_id, service_id, shape_id, stop_id, arrival_time)
+SELECT t1.trip_id, stop_sequence, count(*) OVER(PARTITION BY t1.trip_id), 
+    route_id, service_id, shape_id, stop_id, arrival_time
+FROM trips AS t1 JOIN stop_times AS t2
+ON t1.trip_id = t2.trip_id;
+
+CREATE TABLE synonyms (
+    word text PRIMARY KEY,
+    synonym text
+);
+
+INSERT INTO synonyms (word, synonym) VALUES
+('saint', 'st'),
+('street', 'st'),
+('road', 'rd'),
+('avenue', 'ave'),
+('boulevard', 'blvd'),
+('drive', 'dr');
+
+-- CREATE OR REPLACE FUNCTION synonym_replace(word text) RETURNS text AS $$
+-- DECLARE
+--     synonym text;
+-- BEGIN
+--     SELECT s.synonym INTO synonym
+--     FROM synonyms s
+--     WHERE s.word = word;
+
+--     RETURN coalesce(synonym, word);
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- CREATE TEXT SEARCH CONFIGURATION streetname (COPY = english);
+
+-- CREATE TEXT SEARCH TEMPLATE synonym_replace_temp (
+--     LEXIZE = synonym_replace
+-- );
+
+-- CREATE TEXT SEARCH DICTIONARY streetname_dict (
+--     TEMPLATE = synonym_replace_temp
+-- );
+
+-- ALTER TEXT SEARCH CONFIGURATION streetname
+-- ALTER MAPPING FOR asciiword, asciihword, hword_asciipart
+-- WITH streetname_dict, english_stem;
+
+CREATE MATERIALIZED VIEW route_query AS
+    SELECT route_id, route_short_name, route_long_name, route_color, route_text_color, 
+        setweight(to_tsvector('english', route_short_name), 'A') || setweight(to_tsvector('english', regexp_replace(route_long_name, '[._\\/-]', ' ', 'g')), 'B') AS route_name_vector
+    FROM routes
+    WHERE route_type = 0 OR route_type = 3;
+CREATE INDEX route_trgm_idx ON route_query USING GIN (route_long_name gin_trgm_ops);
+CREATE INDEX route_ts_idx ON route_query USING GIN (route_name_vector);
+
+CREATE MATERIALIZED VIEW stop_query AS 
+SELECT t1.route_id, t3.stop_id, t3.stop_name, to_tsvector('english', t3.stop_name) AS stop_name_vector
+FROM trips AS t1 JOIN stop_times AS t2 ON t1.trip_id = t2.trip_id
+JOIN stops AS t3 ON t2.stop_id = t3.stop_id 
+JOIN (SELECT route_id, route_type FROM routes) AS t4 ON t1.route_id = t4.route_id AND route_type = 0 OR route_type = 3
+GROUP BY t1.route_id, t3.stop_id, t3.stop_name;
+CREATE INDEX stop_trgm_idx ON stop_query USING GIN (stop_name gin_trgm_ops);
+CREATE INDEX stop_ts_idx ON stop_query USING GIN (route_name_vector);

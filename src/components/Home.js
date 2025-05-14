@@ -6,7 +6,7 @@ import Nav from "./Nav"
 import RouteList from "./RouteList";
 import Create from "./Create";
 import Schedule from "./Schedule.js";
-import Signup from "./Signup.js";
+import Signup from "./Login.js";
 import AuthProvider from "./hooks/useAuth";
 
 export default function Home() {
@@ -14,8 +14,10 @@ export default function Home() {
 
     return (
         <div>
-            <MapWindow busRoute={activeBusRoute}/>
-            <Outlet/>
+            <main className="container">
+                <MapWindow busRoute={activeBusRoute}/>
+                <Outlet/>
+            </main>
         </div>
     );
 }

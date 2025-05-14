@@ -1,22 +1,15 @@
 import React, { useReducer, useContext, useEffect } from "react";
-import { useAuth } from "./hooks/useAuth";
+import { useAuth } from "./hooks/useAuth.js";
 import { useNavigate, Link, useLocation, useOutletContext } from "react-router-dom";
 import axios from "axios";
-import PopupList from "./PopupList";
+import PopupList from "./PopupList.js";
+import { AnyFunction } from "sequelize/types/utils.js";
 
 export default function Create() {
 
     const { state: route } = useLocation();
     
-    function useDebounce(callback, time) {
-        useEffect(() => {
-            let timeoutID = setTimeout(() => {
     
-            }, time);
-            return () => clearTimeout(timeoutID);
-        }, [state.busTitle]);
-    }
-
     const initialState = route || {
         busTitle: "",
         busTag: "",
@@ -27,7 +20,6 @@ export default function Create() {
         stopId: "",
         name: "",
         busList: [],
-        dirList: [],
         stopList: []
     };
     
@@ -131,9 +123,9 @@ export default function Create() {
 
     async function onBusChange(e) {
         e.preventDefault();
-        const input = e.target.value.replaceAll("/", "").replaceAll("\\", "");
+        const input = e.target.value.replace(/[._\\/-]/g, " ");
         if(input.length) {
-            axios.get(`${process.env.REACT_APP_BASE_URI}/bus-route/autocomplete/${input}`)
+            axios.get(`${process.env.REACT_APP_BASE_URI}/bus/search?q=${input}`)
             .then(res => dispatch({ type: "BUS-SUGGEST", busList: res.data }))
             .catch(console.error);
             
@@ -145,7 +137,7 @@ export default function Create() {
         e.preventDefault();
         const input = e.target.value.replaceAll("/", "").replaceAll("\\", "");
         if(input.length && state.busTag.length) {
-            axios.get(`${process.env.REACT_APP_BASE_URI}/bus-route/autocomplete/${state.dirTag}/${input}`)
+            axios.get(`${process.env.REACT_APP_BASE_URI}/bus/search/${state.dirTag}?q=${input}`)
             .then(res => dispatch({ type: "STOP-SUGGEST", stopList: res.data }))
             .catch(console.error);
         }
@@ -167,7 +159,7 @@ export default function Create() {
                         <label htmlFor="name" className="sr-only">Route Name</label>
                         <input
                             type="text"
-                            maxLength="20"
+                            maxLength={20}
                             id="name"
                             className="form-control"
                             placeholder="Enter Name"
@@ -183,7 +175,7 @@ export default function Create() {
                         <label htmlFor="bus" className="sr-only">Bus</label>
                         <input
                             type="text"
-                            maxLength="40"
+                            maxLength={40}
                             id="bus"
                             className={`form-control${state.busTitle.length ? " was-validated": ""}`}
                             placeholder="Enter bus route"
@@ -223,7 +215,7 @@ export default function Create() {
                     <div className="col input-group">
                         <input
                             type="text"
-                            maxLength="50"
+                            maxLength={50}
                             id="stop"
                             className={`form-control${state.stopTitle.length ? " was-validated": ""}`}
                             placeholder="Enter stop"
